@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuis Supervisi Pendidikan</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--text:#1d2433;--muted:#5d677a;--primary:#1f4e78;--onprimary:#fff;--ok:#1b7f4b;--okbg:#e6f5ec;--bad:#c0392b;--badbg:#fdecea;--line:#d9dee8;--warn:#b26a00}
+@media (prefers-color-scheme: dark){:root{--bg:#12161d;--card:#1c222c;--text:#e8ecf3;--muted:#9aa5b8;--primary:#6fa8dc;--onprimary:#0b1220;--ok:#4cc38a;--okbg:#16342a;--bad:#ff7b6e;--badbg:#3a1f1c;--line:#2e3644;--warn:#f0b35a}}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.wrap{max-width:820px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px}
+h1{font-size:1.4rem;margin:0 0 4px}
+.muted{color:var(--muted);font-size:.92rem}
+label{display:block;font-weight:bold;margin:14px 0 4px}
+input[type=text]{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;font-size:1rem;background:var(--card);color:var(--text)}
+button{background:var(--primary);color:var(--onprimary);border:0;border-radius:6px;padding:10px 18px;font-size:1rem;font-weight:bold;cursor:pointer}
+button.sec{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.err{color:var(--bad);margin-top:10px;min-height:1.2em}
+.hidden{display:none!important}
+ul.rules{margin:10px 0 0 18px;padding:0}
+#bar{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px}
+#bar .in{max-width:820px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#timer{font-size:1.3rem;font-weight:bold;font-variant-numeric:tabular-nums}
+#timer.low{color:var(--bad)}
+#nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px}
+#nav button{padding:6px 0;font-size:.85rem;background:transparent;color:var(--text);border:1px solid var(--line)}
+#nav button.done{background:var(--primary);color:var(--onprimary);border-color:var(--primary)}
+.q .no{font-weight:bold;color:var(--primary)}
+.q .teks{margin:4px 0 10px;font-weight:bold}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:6px;cursor:pointer}
+.opt:hover{border-color:var(--primary)}
+.opt input{margin-top:4px}
+.opt.benar{background:var(--okbg);border-color:var(--ok)}
+.opt.salah{background:var(--badbg);border-color:var(--bad)}
+.opt.static{cursor:default}
+.skor{font-size:3rem;font-weight:bold;color:var(--primary);line-height:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
+.stat b{display:block;font-size:1.4rem}
+table.id td{padding:2px 12px 2px 0}
+.tag{display:inline-block;font-size:.8rem;font-weight:bold;padding:1px 8px;border-radius:10px;margin-left:6px}
+.tag.benar{background:var(--okbg);color:var(--ok)}
+.tag.salah{background:var(--badbg);color:var(--bad)}
+.tag.kosong{border:1px solid var(--line);color:var(--muted)}
+.pem{margin-top:8px;font-size:.92rem;color:var(--muted)}
+@media print{#bar,button,.noprint{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<!-- ========== LAYAR 1: DATA PESERTA ========== -->
+<div id="awal" class="wrap">
+  <div class="card">
+    <h1 id="judul"></h1>
+    <p class="muted" id="subjudul"></p>
+    <label for="nama">Nama</label>
+    <input type="text" id="nama" autocomplete="off" placeholder="Nama lengkap">
+    <label for="nim">NIM</label>
+    <input type="text" id="nim" autocomplete="off" inputmode="numeric" placeholder="NIM">
+    <label for="kelas">Kelas</label>
+    <input type="text" id="kelas" autocomplete="off" placeholder="Contoh: 2024A">
+    <div class="err" id="err"></div>
+    <ul class="rules muted" id="aturan"></ul>
+    <p><button id="btnMulai">Mulai Kuis</button></p>
+  </div>
+</div>
+
+<!-- ========== LAYAR 2: KUIS ========== -->
+<div id="kuis" class="hidden">
+  <div id="bar"><div class="in">
+    <div>Sisa waktu: <span id="timer">--:--</span></div>
+    <div class="muted">Terjawab: <b id="terjawab">0</b>/<span id="total"></span></div>
+    <button id="btnKumpul">Kumpulkan</button>
+  </div></div>
+  <div class="wrap">
+    <div class="card"><div id="nav"></div></div>
+    <div id="daftarSoal"></div>
+    <div class="card" style="text-align:center">
+      <p class="muted">Periksa kembali jawaban Anda sebelum mengumpulkan.</p>
+      <button id="btnKumpul2">Kumpulkan Jawaban</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== LAYAR 3: HASIL ========== -->
+<div id="hasil" class="wrap hidden">
+  <div class="card">
+    <h1>Hasil Kuis</h1>
+    <table class="id" id="idPeserta"></table>
+    <p style="margin:16px 0 0" class="muted">Skor (0–100)</p>
+    <div class="skor" id="skor"></div>
+    <div class="grid">
+      <div class="stat"><b id="sBenar"></b>Benar</div>
+      <div class="stat"><b id="sSalah"></b>Salah</div>
+      <div class="stat"><b id="sKosong"></b>Tidak dijawab</div>
+      <div class="stat"><b id="sDurasi"></b>Waktu pengerjaan</div>
+    </div>
+    <p class="noprint" style="margin-top:16px"><button class="sec" onclick="window.print()">Cetak / Simpan PDF</button></p>
+    <p class="muted noprint" id="infoKirim"></p>
+  </div>
+  <h2>Pembahasan</h2>
+  <div id="review"></div>
+</div>
+
+<script>
+/* ============ PENGATURAN (silakan ubah) ============ */
+const CONFIG = {
+  JUDUL: "Kuis Pendekatan Supervisi dan Kontinum Perilaku Supervisi",
+  DURASI_MENIT: 60,     // waktu pengerjaan
+  ACAK_SOAL: true,      // urutan soal diacak per peserta
+  ACAK_OPSI: true,      // urutan opsi A–D diacak per peserta
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycby7uOhJirGK2TMBh8eQEIYGqQsGei4cfBH046cs7nHoKi5-QPsw6WT4z80ssQBFMS8s/exec"        // opsional: URL Google Apps Script untuk menyimpan hasil (lihat README)
+};
+
+/* ============ BANK SOAL ============
+   q = pertanyaan, o = 4 opsi (urutan asli A–D), k = indeks jawaban benar (0=A,1=B,2=C,3=D),
+   p = pembahasan, t = topik */
+const SOAL = [
+ {
+  "q": "Perilaku supervisor yang ditandai dengan menatap pembicara, mengangguk, atau bergumam sebagai tanda memahami disebut ...",
+  "o": [
+   "Clarifying",
+   "Encouraging",
+   "Listening",
+   "Reflecting"
+  ],
+  "k": 2,
+  "p": "Listening menunjukkan pemahaman melalui tatapan, anggukan, atau gumaman.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Perilaku yang dilakukan dengan merangkum dan memparafrasekan pesan pembicara untuk memverifikasi akurasinya adalah ...",
+  "o": [
+   "Listening",
+   "Reflecting",
+   "Clarifying",
+   "Presenting"
+  ],
+  "k": 1,
+  "p": "Reflecting dipakai untuk memastikan pesan pembicara dipahami secara akurat.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Respons pengakuan yang membuat pembicara terus menjelaskan posisinya disebut ...",
+  "o": [
+   "Listening",
+   "Reflecting",
+   "Encouraging",
+   "Reinforcing"
+  ],
+  "k": 2,
+  "p": "Encouraging membuat pembicara terus menjelaskan pandangannya.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Ketika supervisor menyampaikan gagasannya sendiri tentang isu yang dibahas, ia sedang melakukan perilaku ...",
+  "o": [
+   "Directing",
+   "Presenting",
+   "Negotiating",
+   "Standardizing"
+  ],
+  "k": 1,
+  "p": "Presenting adalah penyampaian gagasan supervisor sendiri.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Perilaku supervisor yang mendorong semua pihak menghasilkan daftar kemungkinan solusi adalah ...",
+  "o": [
+   "Negotiating",
+   "Problem solving",
+   "Presenting",
+   "Directing"
+  ],
+  "k": 1,
+  "p": "Problem solving menghasilkan daftar kemungkinan solusi dari semua pihak.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Perilaku yang menggeser diskusi dari solusi yang mungkin ke solusi yang akan ditempuh, melalui konsekuensi, konflik, dan prioritas, adalah ...",
+  "o": [
+   "Problem solving",
+   "Negotiating",
+   "Directing",
+   "Reinforcing"
+  ],
+  "k": 1,
+  "p": "Negotiating mempersempit kemungkinan solusi menjadi yang akan ditempuh.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Perilaku supervisor yang menetapkan kriteria dan waktu pelaksanaan keputusan disebut ...",
+  "o": [
+   "Reinforcing",
+   "Standardizing",
+   "Directing",
+   "Negotiating"
+  ],
+  "k": 1,
+  "p": "Standardizing menetapkan kriteria dan waktu pelaksanaan.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Perilaku yang menguatkan arahan dan kriteria dengan menyebut konsekuensi, positif maupun negatif, adalah ...",
+  "o": [
+   "Standardizing",
+   "Directing",
+   "Encouraging",
+   "Reinforcing"
+  ],
+  "k": 3,
+  "p": "Reinforcing memperkuat arahan lewat konsekuensi positif maupun negatif.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Perilaku supervisor yang menyatakan pilihan yang tersedia atau menyatakan apa yang harus dilakukan disebut ...",
+  "o": [
+   "Presenting",
+   "Standardizing",
+   "Directing",
+   "Problem solving"
+  ],
+  "k": 2,
+  "p": "Directing dapat berupa penyampaian alternatif atau penetapan tindakan.",
+  "t": "Sepuluh Perilaku"
+ },
+ {
+  "q": "Dalam Jendela Johari, sikap supervisor yang terlalu privat (private self) berdampak ...",
+  "o": [
+   "menciptakan jarak dan membuat guru enggan terbuka",
+   "mengubah blind self otomatis menjadi public self",
+   "membuat guru makin yakin pada persepsi supervisor",
+   "mempercepat terungkapnya unknown self"
+  ],
+  "k": 0,
+  "p": "Private self menjadi publik ketika supervisor mengungkapkannya; sikap terlalu privat menciptakan jarak.",
+  "t": "Jendela Johari"
+ },
+ {
+  "q": "Perilaku fokus pada pendekatan nondirektif adalah ...",
+  "o": [
+   "Presenting, Problem solving, dan Negotiating",
+   "Directing dan Standardizing",
+   "Listening, Clarifying, Encouraging, dan Reflecting",
+   "Directing, Standardizing, dan Reinforcing"
+  ],
+  "k": 2,
+  "p": "Supervisor nondirektif menjadi pemantul pikiran guru melalui empat perilaku tersebut.",
+  "t": "Perilaku Fokus"
+ },
+ {
+  "q": "Pendekatan yang berfokus pada Directing (menyatakan alternatif) dan Standardizing adalah ...",
+  "o": [
+   "Direktif kontrol",
+   "Direktif informasional",
+   "Kolaboratif",
+   "Nondirektif"
+  ],
+  "k": 1,
+  "p": "Direktif informasional: Directing berupa alternatif, lalu Standardizing setelah guru memilih.",
+  "t": "Perilaku Fokus"
+ },
+ {
+  "q": "Directing (menyatakan yang harus dilakukan), Standardizing, dan Reinforcing merupakan perilaku fokus pendekatan ...",
+  "o": [
+   "Direktif kontrol",
+   "Direktif informasional",
+   "Kolaboratif",
+   "Nondirektif"
+  ],
+  "k": 0,
+  "p": "Reinforcing hanya menjadi fokus pada direktif kontrol.",
+  "t": "Perilaku Fokus"
+ },
+ {
+  "q": "Instrumen Supervisor's Self-Assessment yang diisi supervisor terdiri dari ...",
+  "o": [
+   "10 butir dengan skala 1–7 dalam dua bagian",
+   "32 butir dengan skala 1–7 dalam empat bagian",
+   "16 butir dengan skala 1–4 dalam dua bagian",
+   "32 butir dengan skala 1–4 dalam empat bagian"
+  ],
+  "k": 3,
+  "p": "Empat bagian: professional characteristics, skills, individual assistance, dan schoolwide assistance.",
+  "t": "Penilaian Diri"
+ },
+ {
+  "q": "Hasil konferensi pada pendekatan nondirektif berupa ...",
+  "o": [
+   "rencana bersama dengan pilihan bersama",
+   "rencana mandiri guru dengan pilihan maksimum",
+   "rencana yang disarankan supervisor dengan pilihan terseleksi",
+   "rencana yang ditetapkan supervisor tanpa pilihan"
+  ],
+  "k": 1,
+  "p": "Pada nondirektif, kendali guru maksimum dan supervisor minimum.",
+  "t": "Hasil Konferensi"
+ },
+ {
+  "q": "Hasil konferensi pada pendekatan direktif informasional berupa ...",
+  "o": [
+   "rencana yang disarankan supervisor dengan pilihan terbatas",
+   "rencana mandiri guru dengan pilihan maksimum",
+   "rencana bersama dengan pilihan bersama",
+   "rencana yang ditetapkan supervisor tanpa pilihan"
+  ],
+  "k": 0,
+  "p": "Supervisor dominan, guru memilih secara terbatas.",
+  "t": "Hasil Konferensi"
+ },
+ {
+  "q": "Hasil konferensi pada pendekatan direktif kontrol berupa ...",
+  "o": [
+   "rencana mandiri guru dengan pilihan maksimum",
+   "rencana bersama dengan pilihan bersama",
+   "rencana yang disarankan supervisor dengan pilihan terbatas",
+   "rencana yang ditetapkan supervisor tanpa pilihan bagi guru"
+  ],
+  "k": 3,
+  "p": "Pada direktif kontrol, keputusan sepenuhnya di tangan supervisor.",
+  "t": "Hasil Konferensi"
+ },
+ {
+  "q": "Keadaan yang paling sesuai untuk menggunakan pendekatan direktif kontrol adalah ...",
+  "o": [
+   "guru lebih ahli daripada supervisor dan menanggung penuh pelaksanaan",
+   "keadaan darurat ketika supervisor berkomitmen sedangkan guru tidak",
+   "keahlian guru dan supervisor setara atau saling melengkapi",
+   "guru berada pada tingkat perkembangan tinggi dan sangat mandiri"
+  ],
+  "k": 1,
+  "p": "Direktif kontrol dipakai hanya bila pendekatan lain tidak layak, misalnya saat darurat.",
+  "t": "Direktif Kontrol"
+ },
+ {
+  "q": "Makin ke kanan pada kontinum perilaku supervisi, ...",
+  "o": [
+   "makin besar kendali supervisor dan makin kecil kendali guru",
+   "makin besar kendali guru dan makin kecil kendali supervisor",
+   "kendali keputusan makin dibagi sama rata",
+   "makin banyak pilihan yang tersedia bagi guru"
+  ],
+  "k": 0,
+  "p": "Urutan kontinum: nondirektif, kolaboratif, direktif informasional, direktif kontrol.",
+  "t": "Kontinum"
+ },
+ {
+  "q": "Kondisi yang paling sesuai untuk pendekatan direktif informasional adalah ...",
+  "o": [
+   "guru kurang berpengetahuan, sedangkan supervisor mengetahui praktik yang berhasil",
+   "guru lebih ahli daripada supervisor",
+   "guru dan supervisor setara dan sama-sama berkomitmen",
+   "guru sangat emosional dan perlu didengarkan lebih dulu"
+  ],
+  "k": 0,
+  "p": "Supervisor perlu dipandang kredibel dan bersedia bertanggung jawab atas pilihan guru.",
+  "t": "Direktif Informasional"
+ },
+ {
+  "q": "Kondisi yang paling sesuai untuk pendekatan kolaboratif adalah ...",
+  "o": [
+   "keahlian guru dan supervisor setara atau saling melengkapi, dan keduanya akuntabel",
+   "guru berada pada tingkat perkembangan sangat rendah",
+   "supervisor menanggung akuntabilitas penuh",
+   "guru lebih ahli dan menanggung penuh pelaksanaan"
+  ],
+  "k": 0,
+  "p": "Pendekatan kolaboratif cocok untuk guru dengan tingkat perkembangan sedang atau beragam.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Kondisi yang paling sesuai untuk pendekatan nondirektif adalah ...",
+  "o": [
+   "terjadi keadaan darurat yang menuntut tindakan segera",
+   "supervisor dipandang kredibel dan waktu sangat singkat",
+   "guru enggan menindak isu yang kritis",
+   "guru berada pada tingkat perkembangan tinggi dan lebih ahli daripada supervisor"
+  ],
+  "k": 3,
+  "p": "Guru menanggung penuh pelaksanaan keputusan.",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Dibandingkan perbandingan dengan persepsi guru, data perilaku hasil rekaman nyata ...",
+  "o": [
+   "lebih mudah memicu disonansi kognitif",
+   "kurang berguna karena tidak mencerminkan persepsi",
+   "hanya dapat dikumpulkan lewat kuesioner anonim",
+   "menghilangkan kebutuhan penilaian diri"
+  ],
+  "k": 0,
+  "p": "Data nyata lebih sulit ditolak sehingga lebih mudah memicu disonansi kognitif.",
+  "t": "Disonansi Kognitif"
+ },
+ {
+  "q": "Langkah 1 pada jalur direktif kontrol adalah ...",
+  "o": [
+   "Listening: memahami persepsi guru atas masalah",
+   "Presenting: supervisor menyampaikan masalah berdasarkan observasi",
+   "Clarifying: meminta masukan guru atas masalah",
+   "Directing: menyatakan solusi"
+  ],
+  "k": 1,
+  "p": "Konferensi dibuka dengan Presenting oleh supervisor.",
+  "t": "Direktif Kontrol"
+ },
+ {
+  "q": "Pada langkah 4 direktif kontrol, Problem solving dilakukan ...",
+  "o": [
+   "bersama guru melalui daftar kemungkinan solusi",
+   "oleh guru, lalu dinilai supervisor",
+   "oleh supervisor sendiri dalam benaknya, tanpa melibatkan guru",
+   "setelah guru memilih di antara alternatif"
+  ],
+  "k": 2,
+  "p": "Masukan guru bersifat penasihat; keputusan tetap di tangan supervisor.",
+  "t": "Direktif Kontrol"
+ },
+ {
+  "q": "Clarifying pada langkah 6 direktif kontrol bertujuan ...",
+  "o": [
+   "meminta guru memilih salah satu alternatif solusi",
+   "menemukan hambatan pelaksanaan solusi sebelum guru pulang",
+   "memverifikasi persepsi guru atas masalah",
+   "menyepakati rincian rencana secara bersama"
+  ],
+  "k": 1,
+  "p": "Hambatan ditemukan saat itu juga, bukan dua minggu kemudian.",
+  "t": "Direktif Kontrol"
+ },
+ {
+  "q": "Langkah terakhir (langkah 8) pada jalur direktif kontrol adalah ...",
+  "o": [
+   "Standardizing: menyesuaikan dan merinci harapan",
+   "Directing: menyatakan solusi",
+   "Reinforcing: merangkum dan menindaklanjuti harapan",
+   "Reflecting: merangkum rencana akhir"
+  ],
+  "k": 2,
+  "p": "Reinforcing menutup konferensi dengan rangkuman dan tindak lanjut.",
+  "t": "Direktif Kontrol"
+ },
+ {
+  "q": "Pola bagan direktif kontrol yang menurun ke kanan-bawah menunjukkan bahwa sisi kiri bagan untuk ... dan sisi kanan untuk ...",
+  "o": [
+   "keputusan supervisor; mengumpulkan informasi",
+   "menegosiasikan solusi; menetapkan konsekuensi",
+   "merefleksikan perasaan guru; memuji guru",
+   "mengumpulkan informasi; keputusan supervisor"
+  ],
+  "k": 3,
+  "p": "Konferensi berakhir dengan supervisor mengambil keputusan akhir bagi guru.",
+  "t": "Direktif Kontrol"
+ },
+ {
+  "q": "Pada langkah 4 direktif informasional, Problem solving berupa ...",
+  "o": [
+   "supervisor menyiapkan dua atau tiga alternatif",
+   "supervisor menetapkan satu solusi terbaik dalam benaknya",
+   "guru dan supervisor bertukar daftar solusi",
+   "guru menimbang konsekuensi dari solusinya sendiri"
+  ],
+  "k": 0,
+  "p": "Pilihan guru menjadi terbatas karena hanya dua atau tiga alternatif (Grainer, 1967).",
+  "t": "Direktif Informasional"
+ },
+ {
+  "q": "Pembeda utama direktif informasional dari direktif kontrol terletak pada ...",
+  "o": [
+   "supervisor tidak menggunakan Standardizing",
+   "supervisor tidak menyampaikan masalah di awal",
+   "guru dan supervisor menegosiasikan solusi",
+   "guru yang memutuskan pilihan akhir pada langkah 8"
+  ],
+  "k": 3,
+  "p": "Pada langkah 8 supervisor meminta guru memilih (Clarifying).",
+  "t": "Direktif Informasional"
+ },
+ {
+  "q": "Pada langkah 6 direktif informasional, supervisor meminta reaksi guru atas alternatif agar ...",
+  "o": [
+   "guru dapat mengubah, menghapus, atau merevisi alternatif sebelum pilihan final",
+   "supervisor dapat menetapkan satu solusi tunggal",
+   "guru langsung menentukan kriteria keberhasilan",
+   "konflik dapat segera dinegosiasikan"
+  ],
+  "k": 0,
+  "p": "Reaksi guru memungkinkan penyesuaian alternatif sebelum pilihan final.",
+  "t": "Direktif Informasional"
+ },
+ {
+  "q": "Kalimat yang mencerminkan direktif informasional adalah ...",
+  "o": [
+   "\"Anda wajib memperbaiki pengelolaan kelas pada kelas matematika jam pertama.\"",
+   "\"Salah satu harapan saya, Anda mengikuti lokakarya pengelolaan kelas.\"",
+   "\"Anda akan diminta melakukan perubahan sesuai jadwal tertulis ini.\"",
+   "\"Salah satu alternatifnya, Anda dapat mengikuti lokakarya pengelolaan kelas.\""
+  ],
+  "k": 3,
+  "p": "Bahasa informasional menawarkan alternatif; bahasa kontrol menetapkan tindakan (Pajak & Glickman, 1989).",
+  "t": "Bahasa Supervisi"
+ },
+ {
+  "q": "Kalimat yang mencerminkan direktif kontrol adalah ...",
+  "o": [
+   "\"Anda wajib memperbaiki pengelolaan kelas pada kelas matematika jam pertama.\"",
+   "\"Saya menyarankan tujuan perbaikan pengelolaan kelas pada kelas matematika jam pertama.\"",
+   "\"Salah satu alternatifnya, Anda dapat mengikuti lokakarya pengelolaan kelas.\"",
+   "\"Dari alternatif yang kita bahas, mana yang ingin Anda coba?\""
+  ],
+  "k": 0,
+  "p": "Kata \"wajib\" menetapkan apa yang harus dilakukan tanpa memberi pilihan.",
+  "t": "Bahasa Supervisi"
+ },
+ {
+  "q": "Dalam analogi Pajak & Glickman, direktif kontrol diibaratkan ... dan direktif informasional diibaratkan ...",
+  "o": [
+   "hakim; dokter",
+   "dokter; hakim",
+   "mentor; sahabat",
+   "sahabat; mentor"
+  ],
+  "k": 0,
+  "p": "Batas antara keduanya tipis, tetapi menentukan.",
+  "t": "Bahasa Supervisi"
+ },
+ {
+  "q": "Langkah pertama pada jalur kolaboratif adalah ...",
+  "o": [
+   "Presenting: supervisor menyampaikan persepsinya",
+   "Clarifying: meminta guru menyampaikan masalah menurut guru",
+   "Listening: menunggu pernyataan awal guru",
+   "Problem solving: bertukar kemungkinan solusi"
+  ],
+  "k": 1,
+  "p": "Pandangan guru digali dan diverifikasi lebih dulu (langkah 1–3).",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Presenting pada pendekatan kolaboratif baru muncul setelah guru berbicara agar ...",
+  "o": [
+   "supervisor dapat langsung menetapkan solusi",
+   "guru segera menyepakati rincian rencana",
+   "tidak memengaruhi posisi guru",
+   "supervisor tidak perlu menyatakan pandangannya"
+  ],
+  "k": 2,
+  "p": "Clarifying berikutnya memastikan guru memahami pandangan supervisor.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Pada langkah 7 jalur kolaboratif, Encouraging dipakai untuk ...",
+  "o": [
+   "memuji guru agar menyetujui solusi supervisor",
+   "memverifikasi persepsi guru atas masalah",
+   "menerima konflik, tanpa pemenang atau pihak yang kalah",
+   "menetapkan kriteria dan waktu pelaksanaan"
+  ],
+  "k": 2,
+  "p": "Konflik diterima sebagai bagian dari proses.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Titik puncak pendekatan kolaboratif ditandai oleh perilaku ...",
+  "o": [
+   "Presenting",
+   "Directing",
+   "Listening",
+   "Negotiating"
+  ],
+  "k": 3,
+  "p": "Negotiating mencari kesamaan dan perbedaan, kompromi, atau gagasan baru.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Dalam pendekatan kolaboratif, kedua pihak sebaiknya menuliskan ide solusi lebih dulu sebelum bertukar agar ...",
+  "o": [
+   "supervisor dapat memilih ide terbaik",
+   "pembahasan konsekuensi dapat dilewati",
+   "tidak saling memengaruhi",
+   "guru tidak perlu menjelaskan idenya"
+  ],
+  "k": 2,
+  "p": "Penulisan lebih dulu menjaga kemandirian ide masing-masing pihak.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Langkah terakhir (langkah 10) pada jalur kolaboratif adalah ...",
+  "o": [
+   "Standardizing: menyepakati rincian rencana",
+   "Negotiating: mencari solusi yang dapat diterima",
+   "Reflecting: merangkum rencana akhir dan memeriksa kesepakatan",
+   "Reinforcing: menegaskan konsekuensi"
+  ],
+  "k": 2,
+  "p": "Kedua pihak memeriksa kesepakatan sebelum konferensi ditutup.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Guru tampak setuju karena menduga supervisor sebenarnya memberi perintah (kepatuhan semu). Tindakan yang tepat bagi supervisor adalah ...",
+  "o": [
+   "menghentikan konferensi dan menetapkan rencana sendiri",
+   "menganggap persetujuan guru pasti tulus",
+   "menanyakannya secara terbuka: setuju sungguhan atau hanya patuh",
+   "menghindari konflik dengan segera menyetujui rencana guru"
+  ],
+  "k": 2,
+  "p": "Supervisor perlu menanyakan secara terbuka dan membiarkan guru memimpin negosiasi akhir.",
+  "t": "Kolaboratif"
+ },
+ {
+  "q": "Perilaku yang tidak dipakai pada jalur nondirektif adalah ...",
+  "o": [
+   "Listening, Reflecting, dan Clarifying",
+   "Encouraging, Presenting, dan Standardizing",
+   "Problem solving, Presenting, dan Standardizing",
+   "Negotiating, Directing, dan Reinforcing"
+  ],
+  "k": 3,
+  "p": "Kolom 7, 8, dan 10 pada bagan tidak dipakai.",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Pendekatan nondirektif berbeda dari laissez-faire karena supervisor ...",
+  "o": [
+   "tidak hadir selama konferensi",
+   "menyerahkan keputusan tanpa mendengarkan",
+   "menyampaikan gagasan sendiri secara terbuka",
+   "tetap aktif memfasilitasi"
+  ],
+  "k": 3,
+  "p": "Nondirektif bukan laissez-faire; supervisor aktif sebagai pemantul pikiran guru.",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Pada langkah 8 jalur nondirektif, Presenting dipakai supervisor untuk ...",
+  "o": [
+   "menyampaikan solusi terbaik menurut supervisor",
+   "meminta komitmen pada tindakan yang dapat dilakukan, layak, dan akuntabel",
+   "menyampaikan masalah berdasarkan observasi",
+   "menetapkan kriteria dan waktu pelaksanaan"
+  ],
+  "k": 1,
+  "p": "Presenting di sini bukan menyampaikan gagasan supervisor, melainkan meminta komitmen.",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Pada pendekatan nondirektif, pujian dihindari karena ...",
+  "o": [
+   "dapat memengaruhi keputusan guru",
+   "membuat konferensi terlalu singkat",
+   "menghilangkan kebutuhan Reflecting",
+   "hanya cocok bagi guru yang emosional"
+  ],
+  "k": 0,
+  "p": "Supervisor tidak menyisipkan gagasan sendiri, termasuk lewat pujian atau pertanyaan menggiring.",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Mengenai kemungkinan supervisor bersikap netral, pernyataan yang tepat adalah ...",
+  "o": [
+   "supervisor dapat sepenuhnya netral bila terlatih",
+   "netralitas tidak diperlukan karena supervisor pemegang keputusan",
+   "pengaruh dapat dihilangkan dengan sering memuji guru",
+   "pengaruh tak sadar tidak terhindarkan, sehingga yang dapat dilakukan adalah meminimalkan perilaku yang sengaja memengaruhi"
+  ],
+  "k": 3,
+  "p": "Merujuk pada Carl Rogers (Mears dkk., 1979).",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Jika guru meminta masukan supervisor di awal konferensi nondirektif, sebaiknya ...",
+  "o": [
+   "masukan segera diberikan agar guru tidak bingung",
+   "masukan dijawab dengan beberapa alternatif",
+   "masukan dijawab dengan arahan tegas",
+   "masukan ditunda dan pertanyaan dikembalikan kepada guru"
+  ],
+  "k": 3,
+  "p": "Masukan di awal sangat memengaruhi keputusan; sesudah pilihan menyempit, pengaruhnya lebih kecil.",
+  "t": "Nondirektif"
+ },
+ {
+  "q": "Dalam Jendela Johari (Luft, 1970), \"blind self\" adalah aspek yang ...",
+  "o": [
+   "diketahui oleh kedua pihak",
+   "hanya diketahui supervisor",
+   "hanya diketahui guru dan tidak diketahui supervisor",
+   "tidak diketahui oleh kedua pihak"
+  ],
+  "k": 2,
+  "p": "Blind self menjadi public self setelah supervisor mengetahui persepsi guru.",
+  "t": "Jendela Johari"
+ },
+ {
+  "q": "Menurut Hyman (1975), cara menyelesaikan disonansi kognitif yang menghasilkan perubahan perilaku adalah ...",
+  "o": [
+   "menolak sumber informasi lain sebagai bias atau keliru",
+   "menerima persepsi awal sebagai citra yang diinginkan, lalu mengubah perilaku",
+   "mengubah persepsi diri agar sesuai dengan informasi tersebut",
+   "mengabaikan informasi dan mempertahankan perilaku lama"
+  ],
+  "k": 1,
+  "p": "Cara 1 dan 2 tidak menghasilkan perubahan perilaku; hanya cara 3 yang menghasilkannya.",
+  "t": "Disonansi Kognitif"
+ },
+ {
+  "q": "Seorang kepala sekolah di New Hampshire menilai kemampuan mendengarkannya 7 (skala 1–7), tetapi guru menilainya paling rendah. Hal yang menjadi titik awal perbaikan adalah ...",
+  "o": [
+   "kesenjangan antara persepsi diri dan persepsi staf",
+   "tingginya skor penilaian diri kepala sekolah",
+   "kebiasaan membuka pintu ruangan bagi staf",
+   "rendahnya jumlah survei yang terkumpul"
+  ],
+  "k": 0,
+  "p": "Persepsi diri harus selaras dengan persepsi orang lain.",
+  "t": "Penilaian Diri"
+ }
+];
+
+/* ============ KODE PROGRAM ============ */
+const KEY = "kuis_supervisi_v1";
+const $ = id => document.getElementById(id);
+let state = null, timerId = null;
+
+function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!==undefined) e.textContent=text; return e; }
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
+function fmt(ms){ ms=Math.max(0,ms); const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+function tampil(id){ ["awal","kuis","hasil"].forEach(x=>$(x).classList.toggle("hidden", x!==id)); window.scrollTo(0,0); }
+
+function init(){
+  if(new URLSearchParams(location.search).has("reset")){ try{ localStorage.removeItem(KEY); }catch(e){} }
+  document.title = CONFIG.JUDUL;
+  $("judul").textContent = CONFIG.JUDUL;
+  $("subjudul").textContent = SOAL.length + " soal pilihan ganda · waktu " + CONFIG.DURASI_MENIT + " menit";
+  [ "Isi Nama, NIM, dan Kelas dengan benar sebelum mulai.",
+    "Waktu berjalan sejak tombol Mulai ditekan dan tetap berjalan meskipun halaman ditutup.",
+    "Kuis dikumpulkan otomatis saat waktu habis.",
+    "Skor dan jawaban yang benar ditampilkan setelah Anda mengumpulkan." ]
+    .forEach(t=>$("aturan").appendChild(el("li",null,t)));
+  $("total").textContent = SOAL.length;
+  $("btnMulai").onclick = mulai;
+  $("btnKumpul").onclick = $("btnKumpul2").onclick = () => kumpul(false);
+
+  state = load();
+  if(state && state.selesai){ tampilHasil(); }
+  else if(state){
+    if(Date.now() >= state.akhir){ kumpul(true); } else { tampilKuis(); }
+  } else { tampil("awal"); }
+}
+
+function mulai(){
+  const nama=$("nama").value.trim(), nim=$("nim").value.trim(), kelas=$("kelas").value.trim();
+  if(!nama || !nim || !kelas){ $("err").textContent="Nama, NIM, dan Kelas wajib diisi."; return; }
+  const idx = SOAL.map((_,i)=>i);
+  const opsi = {};
+  SOAL.forEach((_,i)=>{ opsi[i] = CONFIG.ACAK_OPSI ? shuffle([0,1,2,3]) : [0,1,2,3]; });
+  const now = Date.now();
+  state = { nama, nim, kelas, mulai:now, akhir:now+CONFIG.DURASI_MENIT*60000,
+            order: CONFIG.ACAK_SOAL ? shuffle(idx) : idx, opsi, jawaban:{}, selesai:false, hasil:null };
+  save();
+  tampilKuis();
+}
+
+function tampilKuis(){
+  const box = $("daftarSoal"), nav = $("nav");
+  box.innerHTML = ""; nav.innerHTML = "";
+  state.order.forEach((i,pos)=>{
+    const s = SOAL[i];
+    const c = el("div","card q"); c.id = "q"+pos;
+    c.appendChild(el("div","no","Soal "+(pos+1)));
+    c.appendChild(el("div","teks",s.q));
+    state.opsi[i].forEach((orig,p)=>{
+      const lb = el("label","opt");
+      const r = document.createElement("input");
+      r.type="radio"; r.name="q"+i; r.value=orig;
+      if(state.jawaban[i]===orig) r.checked=true;
+      r.onchange = () => { state.jawaban[i]=orig; save(); perbarui(); };
+      lb.appendChild(r);
+      lb.appendChild(el("span",null,"ABCD"[p]+". "+s.o[orig]));
+      c.appendChild(lb);
+    });
+    box.appendChild(c);
+    const b = el("button",null,String(pos+1)); b.id="n"+pos;
+    b.onclick = () => $("q"+pos).scrollIntoView({behavior:"smooth",block:"start"});
+    nav.appendChild(b);
+  });
+  perbarui();
+  tampil("kuis");
+  clearInterval(timerId);
+  timerId = setInterval(tick,500); tick();
+}
+
+function perbarui(){
+  let n=0;
+  state.order.forEach((i,pos)=>{ const d = state.jawaban[i]!==undefined; if(d) n++; $("n"+pos).classList.toggle("done",d); });
+  $("terjawab").textContent = n;
+}
+
+function tick(){
+  const sisa = state.akhir - Date.now();
+  $("timer").textContent = fmt(sisa);
+  $("timer").classList.toggle("low", sisa < 5*60000);
+  if(sisa <= 0){ kumpul(true); }
+}
+
+function hitung(){
+  let benar=0, salah=0, kosong=0;
+  SOAL.forEach((s,i)=>{ const j=state.jawaban[i]; if(j===undefined) kosong++; else if(j===s.k) benar++; else salah++; });
+  const skor = Number((benar/SOAL.length*100).toFixed(1));
+  return { benar, salah, kosong, skor };
+}
+
+function kumpul(otomatis){
+  if(!state || state.selesai) return;
+  if(!otomatis){
+    const kosong = SOAL.length - Object.keys(state.jawaban).length;
+    const msg = kosong>0 ? "Masih ada "+kosong+" soal yang belum dijawab. Kumpulkan sekarang?" : "Kumpulkan jawaban sekarang? Jawaban tidak dapat diubah lagi.";
+    if(!confirm(msg)) return;
+  }
+  clearInterval(timerId);
+  state.selesai = true;
+  state.waktuSelesai = Math.min(Date.now(), state.akhir);
+  state.hasil = hitung();
+  save();
+  kirim();
+  tampilHasil();
+}
+
+function kirim(){
+  if(!CONFIG.SCRIPT_URL) return;
+  const h = state.hasil;
+  const data = { nama:state.nama, nim:state.nim, kelas:state.kelas, skor:h.skor, benar:h.benar, salah:h.salah, kosong:h.kosong,
+                 mulai:new Date(state.mulai).toISOString(), selesai:new Date(state.waktuSelesai).toISOString(),
+                 jawaban: SOAL.map((_,i)=> state.jawaban[i]===undefined ? "-" : "ABCD"[state.jawaban[i]]).join("") };
+  fetch(CONFIG.SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)})
+    .then(()=>{ state.terkirim=true; save(); }).catch(()=>{});
+}
+
+function tampilHasil(){
+  const h = state.hasil || hitung();
+  const t = $("idPeserta"); t.innerHTML="";
+  [["Nama",state.nama],["NIM",state.nim],["Kelas",state.kelas]].forEach(([k,v])=>{
+    const tr=document.createElement("tr"); tr.appendChild(el("td",null,k)); tr.appendChild(el("td",null,": "+v)); t.appendChild(tr);
+  });
+  $("skor").textContent = h.skor;
+  $("sBenar").textContent = h.benar; $("sSalah").textContent = h.salah; $("sKosong").textContent = h.kosong;
+  $("sDurasi").textContent = fmt((state.waktuSelesai||state.akhir) - state.mulai);
+  $("infoKirim").textContent = CONFIG.SCRIPT_URL ? "Hasil Anda telah dikirim ke dosen." : "Catatan: simpan tangkapan layar atau PDF halaman ini sebagai bukti.";
+
+  const rv = $("review"); rv.innerHTML="";
+  state.order.forEach((i,pos)=>{
+    const s = SOAL[i], j = state.jawaban[i];
+    const status = j===undefined ? "kosong" : (j===s.k ? "benar" : "salah");
+    const c = el("div","card q");
+    const head = el("div","no","Soal "+(pos+1));
+    head.appendChild(el("span","tag "+status, status==="benar"?"Benar":status==="salah"?"Salah":"Tidak dijawab"));
+    c.appendChild(head);
+    c.appendChild(el("div","teks",s.q));
+    state.opsi[i].forEach((orig,p)=>{
+      let cls="opt static", mark="";
+      if(orig===s.k){ cls+=" benar"; mark="  ✓ jawaban benar"; }
+      else if(orig===j){ cls+=" salah"; mark="  ✗ jawaban Anda"; }
+      if(orig===s.k && orig===j) mark="  ✓ jawaban Anda (benar)";
+      const d = el("div",cls);
+      d.appendChild(el("span",null,"ABCD"[p]+". "+s.o[orig]+mark));
+      c.appendChild(d);
+    });
+    c.appendChild(el("div","pem","Pembahasan: "+s.p));
+    rv.appendChild(c);
+  });
+  tampil("hasil");
+}
+
+window.addEventListener("beforeunload", e => { if(state && !state.selesai && !$("kuis").classList.contains("hidden")){ e.preventDefault(); e.returnValue=""; } });
+init();
+</script>
+</body>
+</html>
