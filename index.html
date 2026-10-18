@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kuis Supervisi Pendidikan</title>
+<title>Tes Formatif 2 MK Supervisi Pendidikan</title>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--text:#1d2433;--muted:#5d677a;--primary:#1f4e78;--onprimary:#fff;--ok:#1b7f4b;--okbg:#e6f5ec;--bad:#c0392b;--badbg:#fdecea;--line:#d9dee8;--warn:#b26a00}
 @media (prefers-color-scheme: dark){:root{--bg:#12161d;--card:#1c222c;--text:#e8ecf3;--muted:#9aa5b8;--primary:#6fa8dc;--onprimary:#0b1220;--ok:#4cc38a;--okbg:#16342a;--bad:#ff7b6e;--badbg:#3a1f1c;--line:#2e3644;--warn:#f0b35a}}
@@ -63,7 +63,7 @@ table.id td{padding:2px 12px 2px 0}
     <input type="text" id="kelas" autocomplete="off" placeholder="Contoh: 2024A">
     <div class="err" id="err"></div>
     <ul class="rules muted" id="aturan"></ul>
-    <p><button id="btnMulai">Mulai Kuis</button></p>
+    <p><button id="btnMulai">Mulai Formatif 2</button></p>
   </div>
 </div>
 
@@ -87,7 +87,7 @@ table.id td{padding:2px 12px 2px 0}
 <!-- ========== LAYAR 3: HASIL ========== -->
 <div id="hasil" class="wrap hidden">
   <div class="card">
-    <h1>Hasil Kuis</h1>
+    <h1>Hasil Tes</h1>
     <table class="id" id="idPeserta"></table>
     <p style="margin:16px 0 0" class="muted">Skor (0–100)</p>
     <div class="skor" id="skor"></div>
@@ -107,7 +107,7 @@ table.id td{padding:2px 12px 2px 0}
 <script>
 /* ============ PENGATURAN (silakan ubah) ============ */
 const CONFIG = {
-  JUDUL: "Kuis Pendekatan Supervisi dan Kontinum Perilaku Supervisi",
+  JUDUL: "Tes Formatif 2 MK Supervisi Pendidikan",
   DURASI_MENIT: 60,     // waktu pengerjaan
   ACAK_SOAL: true,      // urutan soal diacak per peserta
   ACAK_OPSI: true,      // urutan opsi A–D diacak per peserta
@@ -739,7 +739,7 @@ function init(){
   $("subjudul").textContent = SOAL.length + " soal pilihan ganda · waktu " + CONFIG.DURASI_MENIT + " menit";
   [ "Isi Nama, NIM, dan Kelas dengan benar sebelum mulai.",
     "Waktu berjalan sejak tombol Mulai ditekan dan tetap berjalan meskipun halaman ditutup.",
-    "Kuis dikumpulkan otomatis saat waktu habis.",
+    "Tes dikumpulkan otomatis saat waktu habis.",
     "Skor dan jawaban yang benar ditampilkan setelah Anda mengumpulkan." ]
     .forEach(t=>$("aturan").appendChild(el("li",null,t)));
   $("total").textContent = SOAL.length;
